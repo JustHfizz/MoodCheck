@@ -270,13 +270,15 @@
       grid-template-areas:
         "card tips"
         "score tips"
+        "reasons tips"
         "actions actions"
         "disclaimer disclaimer";
       gap:20px;
     }
     .screen[data-screen="result"] .result-card{grid-area:card;margin-bottom:0;}
     .screen[data-screen="result"] .score-bar-wrap{grid-area:score;margin-bottom:0;align-self:start;}
-    .screen[data-screen="result"] .tips-box{grid-area:tips;margin-bottom:0;height:100%;}
+    .screen[data-screen="result"] > .tips-box{grid-area:tips;margin-bottom:0;height:100%;}
+    .screen[data-screen="result"] #reasonsBox{grid-area:reasons;margin-bottom:0;align-self:start;}
     .screen[data-screen="result"] .action-row{grid-area:actions;flex-direction:row;}
     .screen[data-screen="result"] .action-row .btn-primary,
     .screen[data-screen="result"] .action-row .btn-ghost{flex:1;}
@@ -341,6 +343,15 @@
   .side-eyebrow{
     font-family:'Fraunces',serif;font-weight:500;font-size:16px;
     color:var(--ink-soft);margin-bottom:20px;
+    display:inline-flex;align-items:center;align-self:flex-start;
+    width:fit-content;
+    background:var(--glass-bg-strong);
+    -webkit-backdrop-filter:blur(16px) saturate(220%);
+    backdrop-filter:blur(16px) saturate(220%);
+    border:1px solid var(--glass-border);
+    box-shadow:inset 0 1px 0 var(--glass-highlight), 0 6px 18px rgba(60,50,40,0.07);
+    border-radius:999px;
+    padding:9px 18px;
   }
   .side-title{
     font-family:'Fraunces',serif;font-weight:500;
@@ -679,6 +690,20 @@
   }
   textarea:focus{outline:none;border-color:rgba(var(--mood-rgb),0.5);}
 
+  .name-input{
+    width:100%;
+    font-family:'Figtree',sans-serif;font-size:16px;
+    border:1.5px solid var(--glass-border);border-radius:16px;
+    padding:15px 18px;
+    background:var(--glass-bg-strong);
+    -webkit-backdrop-filter:blur(14px) saturate(220%);
+    backdrop-filter:blur(14px) saturate(220%);
+    color:var(--ink);
+    box-shadow:inset 0 1px 0 var(--glass-highlight);
+  }
+  .name-input::placeholder{color:var(--ink-soft);}
+  .name-input:focus{outline:none;border-color:rgba(var(--mood-rgb),0.5);}
+
   .journal-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:6px;}
   .journal-actions .btn-primary,
   .journal-actions .btn-ghost{width:auto;flex:0 1 auto;margin-top:0;}
@@ -942,13 +967,23 @@
     <span class="eyebrow-icon">🌤️</span>
     <h1 class="hero">Kenali perasaanmu, pahami dirimu.</h1>
     <p class="lede">Luangkan satu menit untuk mengenali suasana hatimu hari ini. Bukan tes, bukan diagnosis — cuma ruang kecil untuk jujur sama diri sendiri.</p>
-    <button class="btn-primary" onclick="goMoodPick()">Mulai cek mood</button>
+    <button class="btn-primary" onclick="goNameEntry()">Mulai cek mood</button>
     <button class="btn-ghost" onclick="goHistory()">Lihat riwayat mood</button>
+  </section>
+
+  <!-- NAME -->
+  <section class="screen" data-screen="name">
+    <span class="eyebrow-icon">👋</span>
+    <h1 class="hero" style="font-size:26px;">Siapa nama kamu?</h1>
+    <p class="lede" style="margin-bottom:22px;">Supaya MoodCheck bisa menyapamu dengan lebih personal.</p>
+    <input type="text" id="userName" class="name-input" placeholder="Tulis namamu di sini..." autocomplete="off">
+    <button class="btn-primary" id="nameNextBtn" style="margin-top:18px;" onclick="submitName()" disabled>Lanjut</button>
+    <button class="btn-ghost" onclick="goHome()">Kembali</button>
   </section>
 
   <!-- MOOD PICK -->
   <section class="screen" data-screen="pick">
-    <h1 class="hero" style="font-size:26px;">Bagaimana suasana hatimu hari ini?</h1>
+    <h1 class="hero" style="font-size:26px;" id="pickTitle">Bagaimana suasana hatimu hari ini?</h1>
     <p class="lede" style="margin-bottom:6px;">Pilih yang paling mendekati perasaanmu sekarang.</p>
     <div class="mood-grid" id="moodGrid"></div>
     <button class="btn-primary" id="pickNextBtn" onclick="goQuestions()" disabled>Lanjut</button>
@@ -1085,33 +1120,78 @@ const MOOD_EMOJI_OPTIONS = [
   {emoji:'😡', label:'Marah/kesal', pts:0},
 ];
 
-const QUESTION_BANK = [
-  {q:'Bagaimana perasaan kamu setelah menjalani berbagai aktivitas hari ini?'},
-  {q:'Bagaimana suasana hati kamu ketika memikirkan kegiatan yang akan kamu jalani hari ini?'},
-  {q:'Apa yang kamu rasakan ketika mengingat kejadian yang paling berkesan bagi kamu hari ini?'},
-  {q:'Bagaimana perasaan kamu ketika menerima kabar dari seseorang yang sedang kamu tunggu?'},
-  {q:'Apa yang kamu rasakan ketika sesuatu yang kamu harapkan ternyata tidak berjalan sesuai dengan kenyataan?'},
-  {q:'Bagaimana perasaan kamu ketika harus menghadapi banyak tugas atau pekerjaan dalam waktu yang bersamaan?'},
-  {q:'Apa yang biasanya kamu rasakan ketika ada seseorang atau sesuatu yang membuat kamu kesal?'},
-  {q:'Bagaimana perasaan kamu ketika menghabiskan waktu bersama orang yang membuat kamu merasa nyaman dan bahagia?'},
-  {q:'Apa yang kamu rasakan ketika sedang sendirian dan tidak memiliki seseorang untuk diajak berbagi cerita?'},
-  {q:'Bagaimana perasaan kamu ketika memikirkan suatu masalah yang sampai sekarang belum terselesaikan?'},
-  {q:'Apa yang kamu rasakan ketika akhirnya mendapatkan sesuatu yang sudah lama kamu inginkan?'},
-  {q:'Bagaimana perasaan kamu ketika rencana yang sudah kamu buat berjalan sesuai dengan harapan?'},
-  {q:'Apa yang kamu rasakan ketika terjadi kesalahpahaman dengan orang yang ada di sekitar kamu?'},
-  {q:'Bagaimana perasaan kamu ketika seseorang memberikan pujian atau menghargai usaha yang sudah kamu lakukan?'},
-  {q:'Apa yang kamu rasakan ketika harus menghadapi atau melakukan sesuatu yang sebenarnya tidak kamu sukai?'},
-  {q:'Bagaimana perasaan kamu setelah berhasil melewati dan menyelesaikan sesuatu yang menurut kamu cukup sulit?'},
-  {q:'Apa yang kamu rasakan ketika orang lain tidak memahami keadaan atau perasaan yang sedang kamu alami?'},
-  {q:'Bagaimana perasaan kamu ketika mengingat kembali suatu kejadian yang pernah membuat kamu kecewa?'},
-  {q:'Bagaimana perasaan kamu ketika menjalani hari dengan tenang tanpa adanya masalah yang berarti?'},
-  {q:'Secara keseluruhan, bagaimana suasana hati dan perasaan kamu hari ini?'},
-  {q:'Apa yang kamu rasakan ketika memikirkan hal-hal yang akan kamu hadapi di hari esok?'},
-  {q:'Bagaimana perasaan kamu ketika berada di tempat yang membuat kamu merasa aman, nyaman, dan tenang?'},
-  {q:'Apa yang kamu rasakan ketika ada sesuatu yang terus mengganggu pikiran kamu tetapi belum menemukan jalan keluar?'},
-  {q:'Bagaimana perasaan kamu setelah berbicara atau berbagi cerita dengan seseorang yang membuat kamu merasa nyaman?'},
-  {q:'Jika suasana hati kamu saat ini dapat digambarkan dengan satu emoji, emoji apa yang paling menggambarkan perasaan kamu?'},
-];
+const MOOD_QUESTION_BANK = {
+  sangat_senang: [
+    {q:'Bagaimana perasaan kamu setelah menjalani berbagai aktivitas hari ini?'},
+    {q:'Apa yang kamu rasakan ketika mengingat kejadian yang paling berkesan bagi kamu hari ini?'},
+    {q:'Bagaimana perasaan kamu ketika menerima kabar dari seseorang yang sedang kamu tunggu?'},
+    {q:'Apa yang kamu rasakan ketika akhirnya mendapatkan sesuatu yang sudah lama kamu inginkan?'},
+    {q:'Bagaimana perasaan kamu ketika seseorang memberikan pujian atau menghargai usaha yang sudah kamu lakukan?'},
+    {q:'Bagaimana perasaan kamu ketika menghabiskan waktu bersama orang yang membuat kamu merasa nyaman dan bahagia?'},
+  ],
+  senang: [
+    {q:'Bagaimana suasana hati kamu ketika memikirkan kegiatan yang akan kamu jalani hari ini?'},
+    {q:'Bagaimana perasaan kamu ketika rencana yang sudah kamu buat berjalan sesuai dengan harapan?'},
+    {q:'Apa yang kamu rasakan ketika akhirnya mendapatkan sesuatu yang sudah lama kamu inginkan?'},
+    {q:'Bagaimana perasaan kamu ketika seseorang memberikan pujian atau menghargai usaha yang sudah kamu lakukan?'},
+    {q:'Bagaimana perasaan kamu ketika menghabiskan waktu bersama orang yang membuat kamu merasa nyaman dan bahagia?'},
+    {q:'Bagaimana perasaan kamu setelah berbicara atau berbagi cerita dengan seseorang yang membuat kamu merasa nyaman?'},
+  ],
+  biasa: [
+    {q:'Secara keseluruhan, bagaimana suasana hati dan perasaan kamu hari ini?'},
+    {q:'Bagaimana perasaan kamu ketika menjalani hari dengan tenang tanpa adanya masalah yang berarti?'},
+    {q:'Bagaimana suasana hati kamu ketika memikirkan kegiatan yang akan kamu jalani hari ini?'},
+    {q:'Apa yang kamu rasakan ketika memikirkan hal-hal yang akan kamu hadapi di hari esok?'},
+    {q:'Bagaimana perasaan kamu ketika berada di tempat yang membuat kamu merasa aman, nyaman, dan tenang?'},
+    {q:'Jika suasana hati kamu saat ini dapat digambarkan dengan satu emoji, emoji apa yang paling menggambarkan perasaan kamu?'},
+  ],
+  sedih: [
+    {q:'Apa yang kamu rasakan ketika sedang sendirian dan tidak memiliki seseorang untuk diajak berbagi cerita?'},
+    {q:'Bagaimana perasaan kamu ketika mengingat kembali suatu kejadian yang pernah membuat kamu kecewa?'},
+    {q:'Apa yang kamu rasakan ketika sesuatu yang kamu harapkan ternyata tidak berjalan sesuai dengan kenyataan?'},
+    {q:'Apa yang kamu rasakan ketika orang lain tidak memahami keadaan atau perasaan yang sedang kamu alami?'},
+    {q:'Bagaimana perasaan kamu ketika memikirkan suatu masalah yang sampai sekarang belum terselesaikan?'},
+    {q:'Bagaimana perasaan kamu setelah berbicara atau berbagi cerita dengan seseorang yang membuat kamu merasa nyaman?'},
+  ],
+  stres: [
+    {q:'Bagaimana perasaan kamu ketika harus menghadapi banyak tugas atau pekerjaan dalam waktu yang bersamaan?'},
+    {q:'Apa yang kamu rasakan ketika ada sesuatu yang terus mengganggu pikiran kamu tetapi belum menemukan jalan keluar?'},
+    {q:'Apa yang kamu rasakan ketika memikirkan hal-hal yang akan kamu hadapi di hari esok?'},
+    {q:'Bagaimana perasaan kamu ketika memikirkan suatu masalah yang sampai sekarang belum terselesaikan?'},
+    {q:'Apa yang kamu rasakan ketika harus menghadapi atau melakukan sesuatu yang sebenarnya tidak kamu sukai?'},
+    {q:'Bagaimana perasaan kamu ketika berada di tempat yang membuat kamu merasa aman, nyaman, dan tenang?'},
+  ],
+  marah: [
+    {q:'Apa yang biasanya kamu rasakan ketika ada seseorang atau sesuatu yang membuat kamu kesal?'},
+    {q:'Apa yang kamu rasakan ketika terjadi kesalahpahaman dengan orang yang ada di sekitar kamu?'},
+    {q:'Apa yang kamu rasakan ketika sesuatu yang kamu harapkan ternyata tidak berjalan sesuai dengan kenyataan?'},
+    {q:'Apa yang kamu rasakan ketika orang lain tidak memahami keadaan atau perasaan yang sedang kamu alami?'},
+    {q:'Apa yang kamu rasakan ketika harus menghadapi atau melakukan sesuatu yang sebenarnya tidak kamu sukai?'},
+    {q:'Bagaimana perasaan kamu setelah berhasil melewati dan menyelesaikan sesuatu yang menurut kamu cukup sulit?'},
+  ],
+};
+
+// Kata kunci sederhana per kategori perasaan, dipakai untuk membaca sentimen dari cerita singkat pengguna
+const MOOD_LEXICON = {
+  sangat_senang: ['banget seneng','sangat senang','luar biasa senang','bahagia banget','excited','semangat sekali','seneng banget'],
+  senang: ['senang','seneng','bahagia','baik','nyaman','lega','bersyukur','puas','seru','asyik','enak','damai','happy','bangga'],
+  biasa: ['biasa saja','biasa aja','standar','flat','datar','lumayan','gitu gitu aja'],
+  sedih: ['sedih','kecewa','sendirian','kesepian','nangis','menangis','hampa','kosong','patah hati','murung','down','galau','terpuruk'],
+  stres: ['cemas','khawatir','takut','stres','stress','bingung','overwhelmed','pusing','tertekan','deg-degan','gelisah','panik','capek pikiran','banyak pikiran'],
+  marah: ['marah','kesal','emosi','benci','jengkel','geram','sebal','muak','naik darah','bete','dongkol'],
+};
+
+function analyzeReasonText(text){
+  const t = ' ' + text.toLowerCase() + ' ';
+  const votes = { sangat_senang:0, senang:0, biasa:0, sedih:0, stres:0, marah:0 };
+  Object.keys(MOOD_LEXICON).forEach(cat=>{
+    MOOD_LEXICON[cat].forEach(word=>{
+      if(t.includes(word)) votes[cat] += 1.5;
+    });
+  });
+  return votes;
+}
+
 function shuffleArr(arr){
   const a = arr.slice();
   for(let i=a.length-1;i>0;i--){
@@ -1120,10 +1200,9 @@ function shuffleArr(arr){
   }
   return a;
 }
-function pickLocalQuestions(n){
-  n = n || QUESTION_BANK.length;
-  if(n >= QUESTION_BANK.length) return QUESTION_BANK.slice();
-  return shuffleArr(QUESTION_BANK).slice(0, n);
+function pickLocalQuestions(moodId){
+  const bank = MOOD_QUESTION_BANK[moodId] || MOOD_QUESTION_BANK.biasa;
+  return bank.slice();
 }
 
 // Isi dengan URL backend kamu setelah dideploy, contoh: 'https://moodcheck-api.onrender.com'
@@ -1148,7 +1227,7 @@ async function loadQuestions(moodId){
       console.warn('Gagal ambil pertanyaan dari AI, pakai pertanyaan lokal:', err);
     }
   }
-  return pickLocalQuestions();
+  return pickLocalQuestions(moodId);
 }
 
 const BOOSTERS = {
@@ -1160,7 +1239,7 @@ const BOOSTERS = {
   marah:['Tarik napas dalam 5 kali sebelum bicara','Tuliskan apa yang membuatmu kesal','Jalan sebentar untuk menenangkan pikiran'],
 };
 
-let state = { mood:null, qIndex:0, answers:[], reasons:[], score:0, cameFrom:'result', questions:null, selectedPts:null };
+let state = { mood:null, resultMood:null, qIndex:0, answers:[], reasons:[], score:0, cameFrom:'result', questions:null, selectedPts:null, userName:null };
 
 const TAGS = ['Kuliah/sekolah','Keluarga','Teman','Tugas/pekerjaan','Masalah pribadi','Lainnya'];
 let selectedTags = [];
@@ -1198,8 +1277,30 @@ function showScreen(name){
 
 function goHome(){ showScreen('home'); }
 
+function goNameEntry(){
+  showScreen('name');
+  const input = $('#userName');
+  const savedName = localStorage.getItem('moodcheck_name') || '';
+  input.value = savedName;
+  $('#nameNextBtn').disabled = !savedName.trim();
+  input.oninput = ()=>{ $('#nameNextBtn').disabled = !input.value.trim(); };
+  input.onkeydown = (e)=>{ if(e.key === 'Enter' && input.value.trim()) submitName(); };
+  setTimeout(()=>input.focus(), 350);
+}
+
+function submitName(){
+  const input = $('#userName');
+  const name = input.value.trim();
+  if(!name) return;
+  state.userName = name;
+  localStorage.setItem('moodcheck_name', name);
+  goMoodPick();
+}
+
 function goMoodPick(){
-  state = { mood:null, qIndex:0, answers:[], reasons:[], score:0, selectedPts:null };
+  state.mood = null; state.qIndex = 0; state.answers = []; state.reasons = []; state.score = 0; state.selectedPts = null;
+  const name = localStorage.getItem('moodcheck_name');
+  $('#pickTitle').textContent = name ? 'Bagaimana suasana hatimu hari ini, ' + name + '?' : 'Bagaimana suasana hatimu hari ini?';
   renderMoodGrid();
   $('#pickNextBtn').disabled = true;
   showScreen('pick');
@@ -1300,14 +1401,39 @@ function submitAnswer(){
 function computeResult(){
   const maxScore = state.questions.length * 5;
   const raw = state.answers.reduce((a,b)=>a+b,0);
+  const avgPts = raw / state.questions.length; // 0-5
   state.score = Math.round((raw/maxScore)*100);
+
+  // Gabungkan tiga sinyal untuk menentukan mood hasil akhir yang lebih akurat:
+  // 1) mood yang dipilih di awal, 2) rata-rata intensitas jawaban emoji, 3) kata kunci dari cerita/alasan
+  const votes = { sangat_senang:0, senang:0, biasa:0, sedih:0, stres:0, marah:0 };
+  votes[state.mood] += 2;
+
+  if(avgPts >= 4.3) votes.sangat_senang += 2.5;
+  else if(avgPts >= 3.3) votes.senang += 2.5;
+  else if(avgPts >= 2.3) votes.biasa += 2;
+  else if(avgPts >= 1.3) { votes.sedih += 1.2; votes.stres += 1.2; }
+  else { votes.marah += 1.3; votes.sedih += 1; votes.stres += 1; }
+
+  const allText = state.reasons.map(r=>r.reason).join(' . ');
+  if(allText.trim()){
+    const textVotes = analyzeReasonText(allText);
+    Object.keys(textVotes).forEach(cat=>{ votes[cat] += textVotes[cat]; });
+  }
+
+  let bestMood = state.mood, bestVotes = -Infinity;
+  Object.keys(votes).forEach(cat=>{
+    if(votes[cat] > bestVotes){ bestVotes = votes[cat]; bestMood = cat; }
+  });
+  state.resultMood = bestMood;
+
   renderResult();
   saveToHistory();
   showScreen('result');
 }
 
 function renderResult(){
-  const mood = findMood(state.mood);
+  const mood = findMood(state.resultMood || state.mood);
   setMoodTheme(mood);
   $('#resEmoji').textContent = mood.emoji;
   $('#resLabel').textContent = mood.label;
@@ -1332,7 +1458,6 @@ function renderResult(){
       const qEl = document.createElement('strong');
       qEl.textContent = r.q;
       li.appendChild(qEl);
-      li.appendChild(document.createElement('br'));
       li.appendChild(document.createTextNode(r.reason));
       reasonsList.appendChild(li);
     });
@@ -1346,8 +1471,9 @@ function saveToHistory(){
   const history = JSON.parse(localStorage.getItem('moodcheck_history') || '[]');
   history.push({
     date: new Date().toISOString(),
-    mood: state.mood,
-    score: state.score
+    mood: state.resultMood || state.mood,
+    score: state.score,
+    reasons: (state.reasons || []).map(r=>r.reason)
   });
   localStorage.setItem('moodcheck_history', JSON.stringify(history));
 }
@@ -1429,7 +1555,7 @@ function escapeHtml(str){
 }
 
 function goBooster(){
-  const mood = findMood(state.mood) || MOODS[2];
+  const mood = findMood(state.resultMood || state.mood) || MOODS[2];
   setMoodTheme(mood);
   $('#boosterSub').textContent = 'Beberapa hal kecil yang cocok untuk mood "'+mood.label+'".';
   const list = $('#boosterList');
@@ -1551,13 +1677,14 @@ function goHistory(){
     const d = new Date(h.date);
     const dateStr = d.toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'long'});
     const note = findJournalForEntry(h);
+    const reasonText = (h.reasons && h.reasons.length) ? h.reasons.join(' · ') : (note ? note.text : '');
     html += '<div class="history-note-card" style="--hn-rgb:'+m.rgb+'">'+
       '<div class="history-note-head">'+
         '<div class="history-note-mood"><span class="em">'+m.emoji+'</span><span>'+m.label+'</span></div>'+
         '<span class="history-badge">'+h.score+'%</span>'+
       '</div>'+
       '<div class="history-note-date">'+dateStr+'</div>'+
-      (note ? '<p class="history-note-text">"'+escapeHtml(note.text)+'"</p>' : '')+
+      (reasonText ? '<p class="history-note-text">"'+escapeHtml(reasonText)+'"</p>' : '')+
       '</div>';
   });
   html += '</div>';
